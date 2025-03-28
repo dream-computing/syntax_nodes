@@ -1,6 +1,6 @@
 # SyntaxNodes - Image Processing Effects for ComfyUI
 
-![SyntaxNodes Overview](examples/syntaxnodes_overview.png) <!-- Replace with path to your overview image -->
+![SyntaxNodes Overview](examples/overview.png) <!-- Replace with path to your overview image -->
 
 A collection of custom nodes for ComfyUI designed to apply various image processing effects, stylizations, and analyses. From glitch art and cyberpunk aesthetics to low-poly conversions and particle effects, these nodes offer a wide range of creative possibilities.
 

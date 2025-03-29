@@ -40,7 +40,7 @@ This pack includes the following nodes:
 1.  Navigate to your ComfyUI `custom_nodes` directory:
     *   `cd ComfyUI/custom_nodes/`
 2.  Clone this repository:
-    *   `git clone https://github.com/your-username/SyntaxNodes.git` <!-- Replace with your actual repo URL -->
+    *   `[git clone https://github.com/your-username/SyntaxNodes.git](https://github.com/dream-computing/syntax_nodes.git)` <!-- Replace with your actual repo URL -->
 3.  Restart ComfyUI.
 
 *(Optional: Add instructions for installation via ComfyUI Manager if you plan to register it there.)*

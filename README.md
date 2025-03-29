@@ -301,7 +301,7 @@ Creates trailing or faded copies of the image, simulating motion blur or afterim
 
 ---
 
-###  Luminance-Based Horizontal Lines
+###  Luminance-Based Lines
 
 *(No example screenshot provided)*
 

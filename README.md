@@ -51,7 +51,7 @@ Below are details and examples for each node:
 
 ---
 
-### #19 Voxel Block Effect
+###  Voxel Block Effect
 
 Applies a 3D pixelated (voxel) effect to the image.
 
@@ -67,7 +67,7 @@ Applies a 3D pixelated (voxel) effect to the image.
 
 ---
 
-### #16 RGB Streak Effect
+###  RGB Streak Effect
 
 Creates horizontal glitch-like streaks based on pixel brightness in RGB channels.
 
@@ -83,7 +83,7 @@ Creates horizontal glitch-like streaks based on pixel brightness in RGB channels
 
 ---
 
-### #15 Cyberpunk Window Effect
+###  Cyberpunk Window Effect
 
 Overlays futuristic UI window elements onto detected edges or regions of interest.
 
@@ -103,7 +103,7 @@ Overlays futuristic UI window elements onto detected edges or regions of interes
 
 ---
 
-### #2 Cyberpunk Magnify Effect
+###  Cyberpunk Magnify Effect
 
 Creates magnified inset views ("detail windows") focusing on specific parts of the image, often highlighted by lines pointing to the original location.
 
@@ -121,7 +121,7 @@ Creates magnified inset views ("detail windows") focusing on specific parts of t
 
 ---
 
-### #18 Variable Line Width Effect
+###  Variable Line Width Effect
 
 Draws horizontal lines across the image, displacing them vertically based on image content and varying color along the line.
 
@@ -141,7 +141,7 @@ Draws horizontal lines across the image, displacing them vertically based on ima
 
 ---
 
-### #5 Edge Tracing Animation
+###  Edge Tracing Animation
 
 Visualizes image edges using animated particles that move along detected contours. *(Note: Example shows a static frame, animation occurs over time/frames)*.
 
@@ -160,7 +160,7 @@ Visualizes image edges using animated particles that move along detected contour
 
 ---
 
-### #4 Edge Measurement Overlay
+###  Edge Measurement Overlay
 
 Detects contours using Canny edge detection and draws bounding boxes around them.
 
@@ -175,7 +175,7 @@ Detects contours using Canny edge detection and draws bounding boxes around them
 
 ---
 
-### #7 Jigsaw Puzzle Effect
+###  Jigsaw Puzzle Effect
 
 Transforms the image into a jigsaw puzzle grid, with options to remove pieces.
 
@@ -191,7 +191,7 @@ Transforms the image into a jigsaw puzzle grid, with options to remove pieces.
 
 ---
 
-### #9 Luminance Particle Effect
+###  Luminance Particle Effect
 
 Generates particles whose distribution and possibly appearance are based on the luminance (brightness) of the input image/depth map.
 
@@ -211,7 +211,7 @@ Generates particles whose distribution and possibly appearance are based on the 
 
 ---
 
-### #8 Low Poly Image Processor
+###  Low Poly Image Processor
 
 Converts the image into a stylized low-polygon representation using Delaunay triangulation.
 
@@ -227,7 +227,7 @@ Converts the image into a stylized low-polygon representation using Delaunay tri
 
 ---
 
-### #13 Pointillism Effect
+###  Pointillism Effect
 
 Recreates the image using small dots of color, mimicking the Pointillist art style.
 
@@ -241,7 +241,7 @@ Recreates the image using small dots of color, mimicking the Pointillist art sty
 
 ---
 
-### #12 Paper Craft Effect
+###  Paper Craft Effect
 
 Applies a filter that makes the image look like it's constructed from folded geometric triangles.
 
@@ -257,7 +257,7 @@ Applies a filter that makes the image look like it's constructed from folded geo
 
 ---
 
-### #14 Region Boundary Node
+###  Region Boundary Node
 
 Segments the image into superpixels (regions of similar color/texture) using an algorithm like SLIC and draws the boundaries between them.
 
@@ -272,7 +272,7 @@ Segments the image into superpixels (regions of similar color/texture) using an 
 
 ---
 
-### #3 Depth to LIDAR Effect
+###  Depth to LIDAR Effect
 
 Simulates a LIDAR scan visualization based on a depth map input (brighter areas treated as closer). Often used with 3D renders or actual depth data.
 
@@ -286,7 +286,7 @@ Simulates a LIDAR scan visualization based on a depth map input (brighter areas 
 
 ---
 
-### #6 Ghosting/Afterimage Effect
+###  Ghosting/Afterimage Effect
 
 *(No example screenshot provided)*
 
@@ -301,7 +301,7 @@ Creates trailing or faded copies of the image, simulating motion blur or afterim
 
 ---
 
-### #10 Luminance-Based Horizontal Lines
+###  Luminance-Based Horizontal Lines
 
 *(No example screenshot provided)*
 
@@ -318,7 +318,7 @@ Draws horizontal lines across the image whose characteristics (e.g., waviness, o
 ---
 
 
-### #17 Upsight Person Tracking
+###  Upsight Person Tracking
 
 
 Detects and tracks human body parts (shoulders, hips, face, hands) using pose estimation models. The output "rotates" the video to attempt to keep them centered.
@@ -343,10 +343,7 @@ Detects and tracks human body parts (shoulders, hips, face, hands) using pose es
 4.  Adjust the parameters as needed.
 5.  Connect the `IMAGE` output of the SyntaxNode to a `Preview Image` node or another processing node.
 
-## Dependencies
 
-*   ComfyUI
-*   Likely dependencies: `numpy`, `opencv-python`, `scipy`, `scikit-image` (These are common in ComfyUI environments, but confirm if any *extra* non-standard libraries are needed).
 
 ## Contributing
 

@@ -2,7 +2,7 @@
 name = "syntax_nodes"
 description = "a collection of ComfyUI image processing nodes"
 version = "1.0"
-license = "LICENSE"
+license = "Your License Text Here"
 dependencies = [
     "Pillow",
     "opencv-python",

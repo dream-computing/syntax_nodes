@@ -2,44 +2,46 @@
 
 ![SyntaxNodes Overview](examples/overview.png) <!-- Replace with path to your overview image -->
 
-A collection of custom nodes for ComfyUI designed to apply various image processing effects, stylizations, and analyses. 
+A collection of custom nodes for ComfyUI designed to apply various image processing effects, stylizations, and analyses.
+
 ## Features
 
 This pack includes the following nodes:
 
 **Stylization & Effects:**
 
-*   [Voxel Block Effect](#19-voxel-block-effect)
-*   [RGB Streak Effect](#16-rgb-streak-effect)
-*   [Cyberpunk Window Effect](#15-cyberpunk-window-effect)
-*   [Cyberpunk Magnify Effect](#2-cyberpunk-magnify-effect)
-*   [Variable Line Width Effect](#18-variable-line-width-effect)
-*   [Jigsaw Puzzle Effect](#7-jigsaw-puzzle-effect)
-*   [Low Poly Image Processor](#8-low-poly-image-processor)
-*   [Pointillism Effect](#13-pointillism-effect)
-*   [Paper Craft Effect](#12-paper-craft-effect)
-*   [Ghosting/Afterimage Effect](#6-ghostingafterimage-effect)
-*   [Luminance-Based Horizontal Lines](#10-luminance-based-horizontal-lines)
+*   [Voxel Block Effect](#voxel-block-effect)
+*   [RGB Streak Effect](#rgb-streak-effect)
+*   [Cyberpunk Window Effect](#cyberpunk-window-effect)
+*   [Cyberpunk Magnify Effect](#cyberpunk-magnify-effect)
+*   [Variable Line Width Effect](#variable-line-width-effect)
+*   [Jigsaw Puzzle Effect](#jigsaw-puzzle-effect)
+*   [Low Poly Image Processor](#low-poly-image-processor)
+*   [Pointillism Effect](#pointillism-effect)
+*   [Paper Craft Effect](#paper-craft-effect)
+*   [Ghosting/Afterimage Effect](#ghostingafterimage-effect)
+*   [Luminance-Based Lines](#luminance-based-lines)
+*   [Pixel Scatter Effect](#pixel-scatter-effect)
 
 **Analysis & Visualization:**
 
-*   [Edge Tracing Animation](#5-edge-tracing-animation)
-*   [Edge Measurement Overlay](#4-edge-measurement-overlay)
-*   [Luminance Particle Effect](#9-luminance-particle-effect)
-*   [Depth to LIDAR Effect](#3-depth-to-lidar-effect)
-*   [Optical Flow Particle Effect](#11-optical-flow-particle-effect)
-*   [Region Boundary Node](#14-region-boundary-node)
+*   [Edge Tracing Animation](#edge-tracing-animation)
+*   [Edge Measurement Overlay](#edge-measurement-overlay)
+*   [Luminance Particle Effect](#luminance-particle-effect)
+*   [Depth to LIDAR Effect](#depth-to-lidar-effect)
+*   [Region Boundary Node](#region-boundary-node)
 
-**Utility (Potentially):**
+**Utility & Synchronization:**
 
-*   [Upsight Person Tracking](#17-upsight-person-tracking) *(Note: Based on name, might be for pose estimation or specialized effects)*
+*   [Beat Sync](#beat-sync)
+*   [Upright Person Tracking](#upright-person-tracking)
 
 ## Installation
 
 1.  Navigate to your ComfyUI `custom_nodes` directory:
     *   `cd ComfyUI/custom_nodes/`
 2.  Clone this repository:
-    *   `git clone https://github.com/dream-computing/syntax_nodes.git` 
+    *   `git clone https://github.com/dream-computing/syntax_nodes.git`
 3.  Restart ComfyUI.
 
 *(Optional: Add instructions for installation via ComfyUI Manager if you plan to register it there.)*
@@ -50,7 +52,7 @@ Below are details and examples for each node:
 
 ---
 
-###  Voxel Block Effect
+### Voxel Block Effect
 
 Applies a 3D pixelated (voxel) effect to the image.
 
@@ -66,7 +68,7 @@ Applies a 3D pixelated (voxel) effect to the image.
 
 ---
 
-###  RGB Streak Effect
+### RGB Streak Effect
 
 Creates horizontal glitch-like streaks based on pixel brightness in RGB channels.
 
@@ -82,7 +84,7 @@ Creates horizontal glitch-like streaks based on pixel brightness in RGB channels
 
 ---
 
-###  Cyberpunk Window Effect
+### Cyberpunk Window Effect
 
 Overlays futuristic UI window elements onto detected edges or regions of interest.
 
@@ -102,7 +104,7 @@ Overlays futuristic UI window elements onto detected edges or regions of interes
 
 ---
 
-###  Cyberpunk Magnify Effect
+### Cyberpunk Magnify Effect
 
 Creates magnified inset views ("detail windows") focusing on specific parts of the image, often highlighted by lines pointing to the original location.
 
@@ -120,7 +122,7 @@ Creates magnified inset views ("detail windows") focusing on specific parts of t
 
 ---
 
-###  Variable Line Width Effect
+### Variable Line Width Effect
 
 Draws horizontal lines across the image, displacing them vertically based on image content and varying color along the line.
 
@@ -140,7 +142,115 @@ Draws horizontal lines across the image, displacing them vertically based on ima
 
 ---
 
-###  Edge Tracing Animation
+### Jigsaw Puzzle Effect
+
+Transforms the image into a jigsaw puzzle grid, with options to remove pieces.
+
+**Parameters:**
+*   `image`: Input image.
+*   `background` (optional): Image to use as background where pieces are removed.
+*   `pieces`: Number of pieces along one dimension (total pieces = `pieces` * `pieces`).
+*   `piece_size`: Size of each puzzle piece (may override `pieces` or work with it).
+*   `num_remove`: Number of random pieces to remove.
+
+**Example:**
+![Jigsaw Puzzle Effect Example](examples/jigsaw_puzzle_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Low Poly Image Processor
+
+Converts the image into a stylized low-polygon representation using Delaunay triangulation.
+
+**Parameters:**
+*   `image`: Input image.
+*   `num_points`: Number of initial points for triangulation.
+*   `num_points_step`: Step related to point density or refinement.
+*   `edge_points`: Number of points placed along detected edges.
+*   `edge_points_step`: Step related to edge point density.
+
+**Example:**
+![Low Poly Image Processor Example](examples/low_poly_image_processor.png) <!-- Replace with path to your example image -->
+
+---
+
+### Pointillism Effect
+
+Recreates the image using small dots of color, mimicking the Pointillist art style.
+
+**Parameters:**
+*   `image`: Input image.
+*   `dot_radius`: Radius of the individual dots.
+*   `dot_density`: Number of dots to generate (higher means denser).
+
+**Example:**
+![Pointillism Effect Example](examples/pointillism_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Paper Craft Effect
+
+Applies a filter that makes the image look like it's constructed from folded geometric triangles.
+
+**Parameters:**
+*   `image`: Input image.
+*   `mask` (optional): Mask to limit the effect area.
+*   `triangle_size`: Size of the triangular facets.
+*   `fold_depth`: Intensity of the simulated folds/shading between triangles.
+*   `shadow_strength`: Strength of the drop shadow effect.
+
+**Example:**
+![Paper Craft Effect Example](examples/paper_craft_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Ghosting/Afterimage Effect
+
+Creates trailing or faded copies of the image, simulating motion blur or afterimages.
+
+**Parameters:**
+*   `image`: Input image.
+*   `mask` (optional): Mask to limit effect area.
+*   `decay_rate`: How quickly the ghost images fade.
+*   `offset`: Displacement of the ghost images.
+*   `buffer_size`: Number of previous frames/states to use for ghosting.
+
+**Example:**
+![Ghosting Effect Example](examples/ghosting_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Luminance-Based Lines
+
+Draws horizontal lines across the image whose characteristics (e.g., waviness, opacity) are modulated by the image's luminance. *(Note: This node was previously named `LuminanceDisplacementNode`)*.
+
+**Parameters:**
+*   `image`: Input image.
+*   `mask` (optional): Mask to limit effect area.
+*   `amplitude`: Maximum vertical displacement (waviness) of the lines.
+*   `oscillation_amplitude`: Frequency of the line oscillations.
+*   `line_opacity`: Base opacity of the lines.
+*   `effect_opacity`: How much luminance affects the final opacity/visibility.
+
+**Example:**
+![Luminance Based Lines Example](examples/luminance_based_lines_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Pixel Scatter Effect
+
+**(TODO: Add Description)** Scatters pixels around their original location, creating a dissolving or noisy effect.
+
+**Parameters:**
+*   `image`: Input image.
+*   **(TODO: Add Parameters)** Likely includes `scatter_radius`, `density`, etc.
+
+**Example:**
+![Pixel Scatter Effect Example](examples/pixel_scatter_effect.png) <!-- Replace with path to your example image -->
+
+---
+
+### Edge Tracing Animation
 
 Visualizes image edges using animated particles that move along detected contours. *(Note: Example shows a static frame, animation occurs over time/frames)*.
 
@@ -159,7 +269,7 @@ Visualizes image edges using animated particles that move along detected contour
 
 ---
 
-###  Edge Measurement Overlay
+### Edge Measurement Overlay
 
 Detects contours using Canny edge detection and draws bounding boxes around them.
 
@@ -174,23 +284,7 @@ Detects contours using Canny edge detection and draws bounding boxes around them
 
 ---
 
-###  Jigsaw Puzzle Effect
-
-Transforms the image into a jigsaw puzzle grid, with options to remove pieces.
-
-**Parameters:**
-*   `image`: Input image.
-*   `background` (optional): Image to use as background where pieces are removed.
-*   `pieces`: Number of pieces along one dimension (total pieces = `pieces` * `pieces`).
-*   `piece_size`: Size of each puzzle piece (may override `pieces` or work with it).
-*   `num_remove`: Number of random pieces to remove.
-
-**Example:**
-![Jigsaw Puzzle Effect Example](examples/jigsaw_puzzle_effect.png) <!-- Replace with path to your example image -->
-
----
-
-###  Luminance Particle Effect
+### Luminance Particle Effect
 
 Generates particles whose distribution and possibly appearance are based on the luminance (brightness) of the input image/depth map.
 
@@ -210,53 +304,21 @@ Generates particles whose distribution and possibly appearance are based on the 
 
 ---
 
-###  Low Poly Image Processor
+### Depth to LIDAR Effect
 
-Converts the image into a stylized low-polygon representation using Delaunay triangulation.
+Simulates a LIDAR scan visualization based on a depth map input (brighter areas treated as closer). Often used with 3D renders or actual depth data.
 
 **Parameters:**
-*   `image`: Input image.
-*   `num_points`: Number of initial points for triangulation.
-*   `num_points_step`: Step related to point density or refinement.
-*   `edge_points`: Number of points placed along detected edges.
-*   `edge_points_step`: Step related to edge point density.
+*   `depth_map`: Input depth map (or image to interpret as depth).
+*   `smoothing_factor`: Smoothing applied to the depth map.
+*   `line_thickness`: Thickness of the scan lines.
 
 **Example:**
-![Low Poly Image Processor Example](examples/low_poly_image_processor.png) <!-- Replace with path to your example image -->
+![Depth to LIDAR Effect Example](examples/depth_to_lidar_effect.png) <!-- Replace with path to your example image -->
 
 ---
 
-###  Pointillism Effect
-
-Recreates the image using small dots of color, mimicking the Pointillist art style.
-
-**Parameters:**
-*   `image`: Input image.
-*   `dot_radius`: Radius of the individual dots.
-*   `dot_density`: Number of dots to generate (higher means denser).
-
-**Example:**
-![Pointillism Effect Example](examples/pointillism_effect.png) <!-- Replace with path to your example image -->
-
----
-
-###  Paper Craft Effect
-
-Applies a filter that makes the image look like it's constructed from folded geometric triangles.
-
-**Parameters:**
-*   `image`: Input image.
-*   `mask` (optional): Mask to limit the effect area.
-*   `triangle_size`: Size of the triangular facets.
-*   `fold_depth`: Intensity of the simulated folds/shading between triangles.
-*   `shadow_strength`: Strength of the drop shadow effect.
-
-**Example:**
-![Paper Craft Effect Example](examples/paper_craft_effect.png) <!-- Replace with path to your example image -->
-
----
-
-###  Region Boundary Node
+### Region Boundary Node
 
 Segments the image into superpixels (regions of similar color/texture) using an algorithm like SLIC and draws the boundaries between them.
 
@@ -271,56 +333,21 @@ Segments the image into superpixels (regions of similar color/texture) using an 
 
 ---
 
-###  Depth to LIDAR Effect
+### Beat Sync
 
-Simulates a LIDAR scan visualization based on a depth map input (brighter areas treated as closer). Often used with 3D renders or actual depth data.
+**(TODO: Add Description)** Synchronizes effects or parameters to an audio beat or frequency analysis. *(Note: This node was previously named `FrequencyBeatSyncNode`)*.
 
 **Parameters:**
-*   `depth_map`: Input depth map (or image to interpret as depth).
-*   `smoothing_factor`: Smoothing applied to the depth map.
-*   `line_thickness`: Thickness of the scan lines.
+*   **(TODO: Add Parameters)** Likely includes inputs for `audio` or `bpm`, `frequency_range`, `sensitivity`, `output_value` (e.g., a float or trigger).
 
 **Example:**
-![Depth to LIDAR Effect Example](examples/depth_to_lidar_effect.png) <!-- Replace with path to your example image -->
+![Beat Sync Example](examples/beat_sync_effect.png) <!-- Replace with path to your example image -->
 
 ---
 
-###  Ghosting/Afterimage Effect
+### Upright Person Tracking
 
-*(No example screenshot provided)*
-
-Creates trailing or faded copies of the image, simulating motion blur or afterimages.
-
-**Parameters:**
-*   `image`: Input image.
-*   `mask` (optional): Mask to limit effect area.
-*   `decay_rate`: How quickly the ghost images fade.
-*   `offset`: Displacement of the ghost images.
-*   `buffer_size`: Number of previous frames/states to use for ghosting.
-
----
-
-###  Luminance-Based Lines
-
-*(No example screenshot provided)*
-
-Draws horizontal lines across the image whose characteristics (e.g., waviness, opacity) are modulated by the image's luminance.
-
-**Parameters:**
-*   `image`: Input image.
-*   `mask` (optional): Mask to limit effect area.
-*   `amplitude`: Maximum vertical displacement (waviness) of the lines.
-*   `oscillation_amplitude`: Frequency of the line oscillations.
-*   `line_opacity`: Base opacity of the lines.
-*   `effect_opacity`: How much luminance affects the final opacity/visibility.
-
----
-
-
-###  Upsight Person Tracking
-
-
-Detects and tracks human body parts (shoulders, hips, face, hands) using pose estimation models. The output "rotates" the video to attempt to keep them centered.
+Detects and tracks human body parts (shoulders, hips, face, hands) using pose estimation models. The output "rotates" the video or adjusts parameters to attempt to keep tracked points centered or stable. *(Note: This node was previously named `UpTrackNode`)*.
 
 **Parameters:**
 *   `image`: Input image.
@@ -332,6 +359,9 @@ Detects and tracks human body parts (shoulders, hips, face, hands) using pose es
 *   `confidence`: Minimum confidence score to accept a detection.
 *   `angle_threshold`: Threshold related to pose angles.
 
+**Example:**
+![Upright Person Tracking Example](examples/upright_person_tracking_effect.png) <!-- Replace with path to your example image -->
+
 ---
 
 ## Usage
@@ -339,10 +369,8 @@ Detects and tracks human body parts (shoulders, hips, face, hands) using pose es
 1.  Load an image using a `Load Image` node or use an image output from another node.
 2.  Add one of the `SyntaxNodes` (found under the "SyntaxNodes" category or by searching after right-clicking) to the canvas.
 3.  Connect the `IMAGE` output from your source node to the `image` (or equivalent) input of the SyntaxNode.
-4.  Adjust the parameters as needed.
+4.  Adjust the parameters as needed. Check the node's tooltips in ComfyUI for specific parameter details.
 5.  Connect the `IMAGE` output of the SyntaxNode to a `Preview Image` node or another processing node.
-
-
 
 ## Contributing
 

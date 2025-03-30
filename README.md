@@ -264,7 +264,7 @@ Generates particles whose distribution and possibly appearance are based on the 
 *   `num_layers`: Number of depth layers for particle generation.
 *   `smoothing_factor`: Smoothing applied to the input map.
 *   `particle_size`: Size of the particles.
-*   `particle_speed`: Speed factor (likely for animation).
+*   `particle_speed`: Speed factor (when used for a batch of image).
 *   `num_particles`: Total number of particles.
 *   `particle_opacity`: Opacity of the particles.
 *   `edge_opacity`: Opacity for edge enhancement.

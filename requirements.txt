@@ -1,0 +1,8 @@
+Pillow
+opencv-python
+numpy
+torch
+librosa
+scipy
+mediapipe
+folder-paths

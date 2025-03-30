@@ -334,7 +334,7 @@ Detects and tracks human body parts (shoulders, hips, face, hands) using pose es
 
 **Example:**
 https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf <!-- Replace with path to your example image -->
-<video width="630" height="300" src="https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf"></video>
+<video width="630" height="300" src="https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf.mp4"></video>
 
 
 

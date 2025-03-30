@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/dream-computing/syntax_nodes.git"
+Repository = "https://github.com/dream-computing/syntax-nodes.git"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]

@@ -3,13 +3,15 @@ name = "syntax_nodes"
 description = "a collection of ComfyUI image processing nodes"
 version = "1.0"
 license = "LICENSE"
-dependencies = ["Pillow
-opencv-python
-numpy
-torch
-librosa
-scipy
-mediapipe"]
+dependencies = [
+    "Pillow",
+    "opencv-python",
+    "numpy",
+    "torch",
+    "librosa",
+    "scipy",
+    "mediapipe"
+]
 
 [project.urls]
 Repository = "https://github.com/dream-computing/syntax_nodes.git"

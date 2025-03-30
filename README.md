@@ -339,7 +339,7 @@ Input a folder of same resolution videos and an input audio, the script will aut
 Turn effect intensity to max for a stronger effect within the edit. 
 
 **Parameters:**
-*   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output", this will output the entire video into your Comfyui output folder with a  "BeatSync(timestamp).mp4 file extension.
+*   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output", this will output the entire video into your Comfyui output folder with a  "BeatSync(timestamp).mp4 file extension.  *Note* VHS combine is only needed for "Frames for Editing", the node can work by itself for "Direct Video Output"
 *   (This can be helpful to process 400 frames with other nodes within Comfyui vs processing a few thousand frames for a multi minute song)
 
 **Example:**

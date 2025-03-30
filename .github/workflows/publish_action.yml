@@ -1,11 +1,11 @@
 name: Publish to Comfy registry
 on:
-  workflow_dispatch: # Allows manual triggering from the Actions tab
+  workflow_dispatch:
   push:
     branches:
-      - main # Or your default branch name (e.g., master)
+      - main
     paths:
-      - "pyproject.toml" # Triggers only if pyproject.toml changes
+      - "pyproject.toml"
 
 jobs:
   publish-node:
@@ -13,10 +13,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
-        uses: actions/checkout@v4 # Checks out your repository code
-
+        uses: actions/checkout@v4
       - name: Publish Custom Node
-        uses: Comfy-Org/publish-node-action@main # Uses the official action
+        uses: Comfy-Org/publish-node-action@main
         with:
-          # This token is used by the action to interact with the registry
+          ## Add your own personal access token to your Github Repository secrets and reference it here.
           personal_access_token: ${{ secrets.REGISTRY_ACCESS_TOKEN }}

@@ -1,0 +1,14 @@
+# Environment Folder
+env/
+
+# Pycache files
+*.pyc 
+
+# VSCode settings
+.vscode
+
+# PNG files
+*.png
+
+# JPG files
+*.jpg

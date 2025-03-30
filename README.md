@@ -217,22 +217,6 @@ Creates trailing or faded copies of the image, simulating motion blur or afterim
 **Example:**
 ![Ghosting Effect Example](examples/ghosting_effect.png) <!-- Replace with path to your example image -->
 
----
-
-### Luminance-Based Lines
-
-Draws horizontal lines across the image whose characteristics (e.g., waviness, opacity) are modulated by the image's luminance. *(Note: This node was previously named `LuminanceDisplacementNode`)*.
-
-**Parameters:**
-*   `image`: Input image.
-*   `mask` (optional): Mask to limit effect area.
-*   `amplitude`: Maximum vertical displacement (waviness) of the lines.
-*   `oscillation_amplitude`: Frequency of the line oscillations.
-*   `line_opacity`: Base opacity of the lines.
-*   `effect_opacity`: How much luminance affects the final opacity/visibility.
-
-**Example:**
-![Luminance Based Lines Example](examples/luminance_based_lines_effect.png) <!-- Replace with path to your example image -->
 
 
 ---

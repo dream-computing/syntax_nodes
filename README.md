@@ -21,7 +21,6 @@ This pack includes the following nodes:
 *   [Paper Craft Effect](#paper-craft-effect)
 *   [Ghosting/Afterimage Effect](#ghostingafterimage-effect)
 *   [Luminance-Based Lines](#luminance-based-lines)
-*   [Pixel Scatter Effect](#pixel-scatter-effect)
 
 **Analysis & Visualization:**
 
@@ -44,7 +43,7 @@ This pack includes the following nodes:
     *   `git clone https://github.com/dream-computing/syntax_nodes.git`
 3.  Restart ComfyUI.
 
-*(Optional: Add instructions for installation via ComfyUI Manager if you plan to register it there.)*
+*(to-do: Add instructions for installation via ComfyUI Manager.)*
 
 ## Nodes Reference
 
@@ -235,18 +234,6 @@ Draws horizontal lines across the image whose characteristics (e.g., waviness, o
 **Example:**
 ![Luminance Based Lines Example](examples/luminance_based_lines_effect.png) <!-- Replace with path to your example image -->
 
----
-
-### Pixel Scatter Effect
-
-**(TODO: Add Description)** Scatters pixels around their original location, creating a dissolving or noisy effect.
-
-**Parameters:**
-*   `image`: Input image.
-*   **(TODO: Add Parameters)** Likely includes `scatter_radius`, `density`, etc.
-
-**Example:**
-![Pixel Scatter Effect Example](examples/pixel_scatter_effect.png) <!-- Replace with path to your example image -->
 
 ---
 
@@ -306,11 +293,11 @@ Generates particles whose distribution and possibly appearance are based on the 
 
 ### Depth to LIDAR Effect
 
-Simulates a LIDAR scan visualization based on a depth map input (brighter areas treated as closer). Often used with 3D renders or actual depth data.
+Quite literally a delay effect for edge detection. This is a WIP node that may change course over time, but in its current state simply takes a batch of images and provides a delay effect for its edge detection.
 
 **Parameters:**
-*   `depth_map`: Input depth map (or image to interpret as depth).
-*   `smoothing_factor`: Smoothing applied to the depth map.
+*   `depth_map`: Input depth map image batch (or batch of images).
+*   `smoothing_factor`: Smoothing applied to the delay rate.
 *   `line_thickness`: Thickness of the scan lines.
 
 **Example:**
@@ -339,7 +326,7 @@ Input a folder of same resolution videos and an input audio, the script will aut
 Turn effect intensity to max for a stronger effect within the edit. 
 
 **Parameters:**
-*   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output", this will output the entire video into your Comfyui output folder with a  "BeatSync(timestamp).mp4 file extension.  *Note* VHS combine is only needed for "Frames for Editing", the node can work by itself for "Direct Video Output"
+*   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output", this will output the entire video into your Comfyui output folder with a  "BeatSync(timestamp).mp4 file extension.  *Note* VHS combine still needs to be plugged in for "Direct Video Output"
 *   (This can be helpful to process 400 frames with other nodes within Comfyui vs processing a few thousand frames for a multi minute song)
 
 **Example:**

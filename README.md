@@ -335,8 +335,8 @@ Segments the image into superpixels (regions of similar color/texture) using an 
 
 ### Beat Sync
 
-**Input a folder of same resolution videos and an input audio, the script will auto process and return a automated, edited video based on your audio input.
-* Turn effect intensity to max for a stronger effect within the edit. 
+Input a folder of same resolution videos and an input audio, the script will auto process and return a automated, edited video based on your audio input.
+Turn effect intensity to max for a stronger effect within the edit. 
 
 **Parameters:**
 *   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output"

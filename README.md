@@ -333,7 +333,7 @@ Detects and tracks human body parts (shoulders, hips, face, hands) using pose es
 *   `angle_threshold`: Threshold related to pose angles.
 
 **Example:**
-![Upright Person Tracking Example](https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf) <!-- Replace with path to your example image -->
+![Upright Person Tracking Example]https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf <!-- Replace with path to your example image -->
 
 
 

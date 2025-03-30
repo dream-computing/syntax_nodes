@@ -1,5 +1,5 @@
 [project]
-name = "comfyui_syntax_nodes"
+name = "syntax_nodes"
 description = "a collection of ComfyUI image processing nodes"
 version = "1.0"
 license = "LICENSE"
@@ -16,6 +16,6 @@ Repository = "https://github.com/dream-computing/syntax_nodes.git"
 #  Used by Comfy Registry https://comfyregistry.org
 
 [tool.comfy]
-PublisherId = "SyntaxDiffusion"
+PublisherId = "dream-computing"
 DisplayName = "syntax_nodes"
 Icon = ""

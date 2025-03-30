@@ -335,10 +335,12 @@ Segments the image into superpixels (regions of similar color/texture) using an 
 
 ### Beat Sync
 
-**(TODO: Add Description)** Synchronizes effects or parameters to an audio beat or frequency analysis. *(Note: This node was previously named `FrequencyBeatSyncNode`)*.
+**Input a folder of same resolution videos and an input audio, the script will auto process and return a automated, edited video based on your audio input.
+* Turn effect intensity to max for a stronger effect within the edit. 
 
 **Parameters:**
-*   **(TODO: Add Parameters)** Likely includes inputs for `audio` or `bpm`, `frequency_range`, `sensitivity`, `output_value` (e.g., a float or trigger).
+*   **if you want to edit a few hundred frames within comfyui select "Frames for Editing", If youd like the entire song to process the selected video folder select "Direct Video Output"
+*   (This can be helpful to process 400 frames with other nodes within Comfyui vs processing a few thousand frames for a multi minute song)
 
 **Example:**
 ![Beat Sync Example](examples/beat_sync_effect.png) <!-- Replace with path to your example image -->

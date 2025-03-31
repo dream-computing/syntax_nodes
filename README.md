@@ -33,7 +33,7 @@ This pack includes the following nodes:
 **Utility & Synchronization:**
 
 *   [Beat Sync](#beat-sync)
-*   [Upright Person Tracking](#upright-person-tracking)
+  
 
 ## Installation
 

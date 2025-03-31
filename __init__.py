@@ -33,7 +33,6 @@ from .cyberpunk_magnify_node import CyberpunkMagnifyNode
 from .rgb_streak_node import RGBStreakNode
 from .voxel_node import VoxelNode
 from .papercraftnode import PaperCraftNode
-from .uptrack_node import UpTrackNode
 
 # Map the node classes for ComfyUI to recognize them
 NODE_CLASS_MAPPINGS = {
@@ -53,7 +52,6 @@ NODE_CLASS_MAPPINGS = {
     "RGBStreakNode": RGBStreakNode,
     "VoxelNode": VoxelNode,
     "PaperCraftNode": PaperCraftNode,
-    "UpTrackNode": UpTrackNode,
 }
 
 # Provide user-friendly display names for the nodes
@@ -73,8 +71,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CyberpunkMagnifyNode": "Cyberpunk Magnify Effect",
     "RGBStreakNode": "RGB Streak Effect",
     "VoxelNode": "Voxel Block Effect",
-    "PaperCraftNode": "Paper Craft Effect",
-    "UpTrackNode": "Upright Person Tracking"
+    "PaperCraftNode": "Paper Craft Effect"
 }
 
 

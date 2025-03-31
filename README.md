@@ -316,25 +316,6 @@ Turn effect intensity to max for a stronger effect within the edit.
 **Example:**
 ![Beat Sync Example](examples/beat_sync_effect.png) <!-- Replace with path to your example image -->
 
----
-
-### Upright Person Tracking
-
-Detects and tracks human body parts (shoulders, hips, face, hands) using pose estimation models. The output "rotates" the video or adjusts parameters to attempt to keep tracked points centered or stable. *(Note: This node was previously named `UpTrackNode`)*.
-
-**Parameters:**
-*   `image`: Input image.
-*   `tracking_mode`: Specifies the model or mode (e.g., whole body, upper body).
-*   `draw_shoulders`, `draw_hips`, `draw_face`, `draw_hands`: Booleans to control visualization of detected parts.
-*   `inertia`: Smoothing factor for tracking over time.
-*   `variance`: Parameter related to detection uncertainty or smoothing kernel.
-*   `damping`: Damping factor for tracking physics/smoothing.
-*   `confidence`: Minimum confidence score to accept a detection.
-*   `angle_threshold`: Threshold related to pose angles.
-
-**Example:**
-https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf <!-- Replace with path to your example image -->
-<video width="630" height="300" src="https://github.com/user-attachments/assets/97b51d06-0970-4d5c-abf6-cf178a28a3cf.mp4"></video>
 
 
 

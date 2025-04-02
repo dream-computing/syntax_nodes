@@ -45,6 +45,13 @@ class FrequencyBeatSyncNode:
                 "output_mode": (["Frames for Editing", "Direct Video Output"],),
                 "filename_prefix": ("STRING", {"default": "BeatSync"}),
                 
+                # --- Sync Adjustment ---
+                "sync_offset_ms": ("INT", {"default": 0, "min": -500, "max": 500, "step": 10, "tooltip": "Adjust sync timing in milliseconds (+/- 500ms). Positive values shift effects later."}),
+                
+                # --- Beat Detection Parameters ---
+                "low_freq_sensitivity": ("FLOAT", {"default": 0.5, "min": 0.1, "max": 1.0, "step": 0.05, "tooltip": "Sensitivity for low-frequency (scene change) beat detection."}),
+                "high_freq_sensitivity": ("FLOAT", {"default": 0.4, "min": 0.1, "max": 1.0, "step": 0.05, "tooltip": "Sensitivity for high-frequency (effect) beat detection."}),
+                
                 # --- Video Sequence Control ---
                 "random_video_order": ("BOOLEAN", {**BOOLEAN_TOGGLE, "default": True, "tooltip": "Use random video ordering? If disabled, videos will be used in alphabetical order."}),
 
@@ -91,6 +98,7 @@ class FrequencyBeatSyncNode:
             },
              "optional": {
                  # Optional inputs can go here if needed in the future
+                 # We've removed the effect_selection string and replaced it with toggles
              }
         }
 
@@ -118,8 +126,8 @@ class FrequencyBeatSyncNode:
             print(f"Error loading audio: {e}")
             return {'waveform': torch.zeros((1, 2, 44100)), 'sample_rate': 44100, 'path': audio_path}
 
-    # --- Beat Detection --- unchanged ---
-    def detect_frequency_beats(self, audio_path):
+    # --- Beat Detection --- IMPROVED with adjustable sensitivity ---
+    def detect_frequency_beats(self, audio_path, low_freq_sensitivity=0.5, high_freq_sensitivity=0.4):
         """Detect beats in different frequency ranges of the audio file using optimized parameters"""
         print("Analyzing audio frequencies...")
         y, sr = librosa.load(audio_path, sr=None)
@@ -127,7 +135,7 @@ class FrequencyBeatSyncNode:
         try:
             y_harmonic, y_percussive = librosa.effects.hpss(y)
 
-            # Use filtering approach for low/high separation (as before)
+            # Use filtering approach for low/high separation
             try:
                 from scipy import signal
                 sos_low = signal.butter(10, 150, 'lowpass', fs=sr, output='sos')
@@ -150,12 +158,12 @@ class FrequencyBeatSyncNode:
             y_low = y[:half]
             y_high = y[half:]
 
-        # Low frequencies (bass/kicks) - scene changes - using onset_detect (as before)
+        # Low frequencies (bass/kicks) - scene changes - using onset_detect with adjustable sensitivity
         onset_env_low = librosa.onset.onset_strength(y=y_low, sr=sr)
         beats_low = librosa.onset.onset_detect(
             onset_envelope=onset_env_low,
             sr=sr,
-            delta=0.5 * 0.08,  # More selective threshold
+            delta=low_freq_sensitivity * 0.08,  # Adjustable threshold based on sensitivity parameter
             wait=4,            # Longer wait to avoid rapid scene changes
             pre_max=3,
             post_max=3,
@@ -165,12 +173,12 @@ class FrequencyBeatSyncNode:
         )
         low_beat_times = librosa.frames_to_time(beats_low, sr=sr)
 
-        # High frequencies (hi-hats/snares) - effects - using onset_detect (as before)
+        # High frequencies (hi-hats/snares) - effects - using onset_detect with adjustable sensitivity
         onset_env_high = librosa.onset.onset_strength(y=y_high, sr=sr)
         beats_high = librosa.onset.onset_detect(
             onset_envelope=onset_env_high,
             sr=sr,
-            delta=0.4 * 0.08,  # Standard threshold
+            delta=high_freq_sensitivity * 0.08,  # Adjustable threshold based on sensitivity parameter
             wait=1,            # Short wait for frequent effects
             pre_max=2,
             post_max=2,
@@ -180,7 +188,7 @@ class FrequencyBeatSyncNode:
         )
         high_beat_times = librosa.frames_to_time(beats_high, sr=sr)
 
-        # Cleanup low beats - ensure minimum spacing (as before)
+        # Cleanup low beats - ensure minimum spacing
         if len(low_beat_times) > 1:
             filtered_low_beats = [low_beat_times[0]]
             min_spacing = 0.5  # seconds
@@ -219,7 +227,7 @@ class FrequencyBeatSyncNode:
             return np.zeros((h if h > 0 else 480, w if w > 0 else 640, 3), dtype=np.uint8)
         return frame
 
-    # --- ALL Effect Functions (Existing + New) --- unchanged ---
+    # --- Effect Functions (unchanged) ---
     def rgb_split_effect(self, frame, shift_amount):
         if shift_amount <= 0: return frame
         h, w = frame.shape[:2]; result = frame.copy(); shift = int(round(shift_amount))
@@ -330,43 +338,37 @@ class FrequencyBeatSyncNode:
                 for x_px in range(w):
                     x_rel=x_px-cx; y_rel=y_px-cy;
                     r_sq_norm=(x_rel*x_rel+y_rel*y_rel)/max_rad_sq if max_rad_sq>0 else 0
-                    # Formula: x' = x * (1 + k*r^2), y' = y * (1 + k*r^2)
-                    # We map from destination (x_px, y_px) to source (src_x, src_y)
-                    # Need inverse mapping, approximately: src_x = x_px / (1 + k*r^2), but remap expects src coords
-                    # Simpler: Calculate destination based on source and use interpolation
-                    # Let's stick to the standard forward mapping for remap: define map_x, map_y as source coordinates for each dest pixel
                     dist_factor = (1 + k * r_sq_norm);
                     src_x = cx + x_rel * dist_factor
                     src_y = cy + y_rel * dist_factor
                     map_x[y_px, x_px] = src_x
                     map_y[y_px, x_px] = src_y
-            # Using INTER_LINEAR for smoothness, BORDER_CONSTANT with black padding
             return cv2.remap(frame, map_x, map_y, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0))
         except Exception as e: print(f"Warn: Barrel distortion error: {e}"); return frame
     def scanline_effect(self, frame, intensity, density):
          if intensity <= 0.0 or density <= 0: return frame
          try:
              h, w = frame.shape[:2]; lines = np.zeros_like(frame, dtype=np.uint8)
-             # Density calculation: higher density means more lines -> smaller spacing
-             # Map density (e.g., 1-20) to a spacing value. Let's try inverse relationship.
-             # Max spacing ~ h/5, Min spacing ~ h/100? Density 1 -> h/5, Density 20 -> h/100
-             # A simple linear map for spacing = max_space - (density - 1) * (max_space - min_space) / (max_density - 1)
-             # Let's use a simpler approach: spacing roughly inverse to density
              line_thickness = 1;
-             # Higher density value = more lines = smaller spacing + thickness
-             spacing = max(1, int(round(h / (density * 5.0)))) # Adjusted scaling factor based on density input range (1-20)
+             spacing = max(1, int(round(h / (density * 5.0)))) # Adjusted scaling factor based on density input range
              for y in range(0, h, spacing + line_thickness):
                  cv2.line(lines, (0, y), (w, y), (0, 0, 0), thickness=line_thickness)
-             # Blend the lines over the frame
              return cv2.addWeighted(frame, 1.0 - intensity, lines, intensity, 0.0)
          except Exception as e: print(f"Warn: Scanline error: {e}"); return frame
 
-    # --- Core Effect Application Logic --- MODIFIED to use toggles ---
+    # --- Core Effect Application Logic --- IMPROVED with simpler beat detection but keeping toggles ---
     def _apply_effects(self, frame, prev_raw_frame, prev_processed_frame, current_time, low_beat_times, high_beat_times, effect_params, fps):
-        modified_frame = frame.copy(); effect_applied_this_frame = False
-        sorted_high_beats = sorted(high_beat_times); beat_indices = {beat: i for i, beat in enumerate(sorted_high_beats)}
-
-        # --- Determine available effects based on toggles ---
+        modified_frame = frame.copy()
+        effect_applied_this_frame = False
+        
+        # Apply sync offset (convert ms to seconds)
+        sync_offset_sec = effect_params.get('sync_offset_ms', 0) / 1000.0
+        adjusted_time = current_time - sync_offset_sec
+        
+        # Get effect window (using fixed 0.1 seconds like original implementation)
+        beat_window = 0.1  # Fixed 0.1 second window as in original
+        
+        # Determine available effects based on toggles
         available_effects = []
         if effect_params.get('enable_rgb_split', False): available_effects.append('rgb')
         if effect_params.get('enable_echo', False): available_effects.append('echo')
@@ -379,125 +381,173 @@ class FrequencyBeatSyncNode:
         if effect_params.get('enable_brightness_flash', False): available_effects.append('bright')
         if effect_params.get('enable_barrel_distortion', False): available_effects.append('barrel')
         if effect_params.get('enable_scanlines', False): available_effects.append('scan')
-        # --- End of determining available effects ---
 
-        if not available_effects: # If all toggles are off, skip high-freq effects
-             pass # Continue to low-freq zoom check below
+        if not available_effects:
+            # Skip high-freq effects if none are enabled
+            pass
         else:
-            for beat_time in sorted_high_beats:
-                time_diff = abs(current_time - beat_time); effect_window = 0.15 # Seconds around beat to apply effect
-                if time_diff < effect_window:
-                    # Apply effect strength based on proximity to beat center (cosine falloff)
-                    proximity_multiplier = (np.cos(time_diff / effect_window * np.pi / 2));
-                    current_effect_strength = effect_params['global_effect_intensity'] * proximity_multiplier
-                    if current_effect_strength <= 0.01: continue # Skip if effect strength is negligible
-
-                    # Cycle through the *enabled* effects based on beat index
-                    effect_choice = available_effects[beat_indices[beat_time] % len(available_effects)]
-
-                    applied_now = True # Assume effect is applied unless condition not met
-                    # --- Apply chosen effect ---
+            # Using original approach: check if within 0.1 seconds of any beat
+            for i, beat_time in enumerate(high_beat_times):
+                time_diff = abs(adjusted_time - beat_time)
+                
+                # Only process beats within the effect window (0.1 seconds)
+                if time_diff < beat_window:
+                    # Straightforward proximity-based effect strength
+                    beat_offset = time_diff / beat_window
+                    effect_strength = effect_params['global_effect_intensity'] * (1.0 - beat_offset)
+                    
+                    # Skip very weak effects
+                    if effect_strength <= 0.01:
+                        continue
+                    
+                    # Choose effect type based on the beat index
+                    # Fixed: Using i instead of np.where which could cause errors
+                    effect_choice = available_effects[i % len(available_effects)]
+                    
+                    # Apply the chosen effect with calculated strength
+                    applied_now = True  # Assume effect will be applied unless check fails
+                    
                     if effect_choice == 'rgb':
-                        eff_shift=max(0,effect_params['rgb_shift_amount']*current_effect_strength);
-                        if eff_shift>0.5: modified_frame=self.rgb_split_effect(modified_frame,eff_shift)
-                        else: applied_now=False
+                        eff_shift = max(0, effect_params['rgb_shift_amount'] * effect_strength)
+                        if eff_shift > 0.5:
+                            modified_frame = self.rgb_split_effect(modified_frame, eff_shift)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'echo' and prev_raw_frame is not None:
-                        eff_alpha=np.clip(effect_params['echo_alpha']*current_effect_strength,0.0,1.0);
-                        if eff_alpha>0.01: modified_frame=self.echo_effect(modified_frame,prev_raw_frame,eff_alpha) # Use prev_raw_frame for echo source
-                        else: applied_now=False
+                        eff_alpha = np.clip(effect_params['echo_alpha'] * effect_strength, 0.0, 1.0)
+                        if eff_alpha > 0.01:
+                            modified_frame = self.echo_effect(modified_frame, prev_raw_frame, eff_alpha)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'glitch':
-                        eff_num=int(round(effect_params['glitch_num_rectangles']*current_effect_strength));
-                        if eff_num>0: modified_frame=self.glitch_effect(modified_frame,eff_num)
-                        else: applied_now=False
+                        eff_num = int(round(effect_params['glitch_num_rectangles'] * effect_strength))
+                        if eff_num > 0:
+                            modified_frame = self.glitch_effect(modified_frame, eff_num)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'vhs':
-                        eff_noise=max(0,effect_params['vhs_noise_intensity']*current_effect_strength); 
-                        eff_rgb_split=max(0.0,effect_params['vhs_rgb_split_intensity']*current_effect_strength); 
-                        eff_quant=effect_params['vhs_quantization_level']
-                        if eff_noise>0.5 or eff_rgb_split>0.01 or eff_quant>1: 
-                            modified_frame=self.vhs_effect(modified_frame,eff_noise,eff_rgb_split,eff_quant)
-                        else: applied_now=False
+                        eff_noise = max(0, effect_params['vhs_noise_intensity'] * effect_strength)
+                        eff_rgb_split = max(0.0, effect_params['vhs_rgb_split_intensity'] * effect_strength)
+                        eff_quant = effect_params['vhs_quantization_level']
+                        if eff_noise > 0.5 or eff_rgb_split > 0.01 or eff_quant > 1:
+                            modified_frame = self.vhs_effect(modified_frame, eff_noise, eff_rgb_split, eff_quant)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'zoom':
-                        base_zoom=effect_params['zoom_factor']; 
-                        eff_zoom=1.0+(base_zoom-1.0)*current_effect_strength;
-                        if abs(eff_zoom-1.0)>0.005: modified_frame=self.zoom_pulse_effect(modified_frame,eff_zoom)
-                        else: applied_now=False
+                        base_zoom = effect_params['zoom_factor']
+                        eff_zoom = 1.0 + (base_zoom - 1.0) * effect_strength
+                        if abs(eff_zoom - 1.0) > 0.005:
+                            modified_frame = self.zoom_pulse_effect(modified_frame, eff_zoom)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'hue':
-                         eff_degrees=effect_params['hue_shift_degrees']*current_effect_strength;
-                         if abs(eff_degrees)>=1: modified_frame=self.hue_shift_effect(modified_frame,eff_degrees)
-                         else: applied_now=False
-                    elif effect_choice == 'sat': # Match key used in available_effects
-                         base_sat=effect_params['saturation_multiplier']; 
-                         eff_sat=1.0+(base_sat-1.0)*current_effect_strength;
-                         if abs(eff_sat-1.0)>0.01: modified_frame=self.saturation_pulse_effect(modified_frame,eff_sat)
-                         else: applied_now=False
-                    elif effect_choice == 'bright': # Match key used in available_effects
-                         eff_bright=effect_params['brightness_add']*current_effect_strength;
-                         if abs(eff_bright)>=1: modified_frame=self.brightness_flash_effect(modified_frame,eff_bright)
-                         else: applied_now=False
-                    elif effect_choice == 'barrel': # Match key used in available_effects
-                         eff_barrel=effect_params['barrel_distortion_strength']*current_effect_strength;
-                         if abs(eff_barrel)>0.005: modified_frame=self.barrel_distortion_effect(modified_frame,eff_barrel)
-                         else: applied_now=False
+                        eff_degrees = effect_params['hue_shift_degrees'] * effect_strength
+                        if abs(eff_degrees) >= 1:
+                            modified_frame = self.hue_shift_effect(modified_frame, eff_degrees)
+                        else:
+                            applied_now = False
+                            
+                    elif effect_choice == 'sat':
+                        base_sat = effect_params['saturation_multiplier']
+                        eff_sat = 1.0 + (base_sat - 1.0) * effect_strength
+                        if abs(eff_sat - 1.0) > 0.01:
+                            modified_frame = self.saturation_pulse_effect(modified_frame, eff_sat)
+                        else:
+                            applied_now = False
+                            
+                    elif effect_choice == 'bright':
+                        eff_bright = effect_params['brightness_add'] * effect_strength
+                        if abs(eff_bright) >= 1:
+                            modified_frame = self.brightness_flash_effect(modified_frame, eff_bright)
+                        else:
+                            applied_now = False
+                            
+                    elif effect_choice == 'barrel':
+                        eff_barrel = effect_params['barrel_distortion_strength'] * effect_strength
+                        if abs(eff_barrel) > 0.005:
+                            modified_frame = self.barrel_distortion_effect(modified_frame, eff_barrel)
+                        else:
+                            applied_now = False
+                            
                     elif effect_choice == 'stutter' and prev_processed_frame is not None:
-                        # Stutter logic: if strength is high enough, replace current frame with previous *processed* frame
-                        if current_effect_strength > 0.5: # Threshold for stutter activation
-                             if modified_frame.shape == prev_processed_frame.shape: 
-                                 modified_frame = prev_processed_frame.copy()
-                             else: applied_now=False # Shape mismatch, can't stutter
-                        else: applied_now=False # Strength too low
-                    elif effect_choice == 'scan': # Match key used in available_effects
-                         eff_scan_intensity=np.clip(effect_params['scanline_intensity']*current_effect_strength,0.0,1.0); 
-                         eff_scan_density=effect_params['scanline_density']
-                         if eff_scan_intensity>0.01 and eff_scan_density>0: 
-                             modified_frame=self.scanline_effect(modified_frame,eff_scan_intensity,eff_scan_density)
-                         else: applied_now=False
-                    else: # Should not happen if available_effects list is correct
+                        if effect_strength > 0.5:
+                            if modified_frame.shape == prev_processed_frame.shape:
+                                modified_frame = prev_processed_frame.copy()
+                            else:
+                                applied_now = False
+                        else:
+                            applied_now = False
+                            
+                    elif effect_choice == 'scan':
+                        eff_scan_intensity = np.clip(effect_params['scanline_intensity'] * effect_strength, 0.0, 1.0)
+                        eff_scan_density = effect_params['scanline_density']
+                        if eff_scan_intensity > 0.01 and eff_scan_density > 0:
+                            modified_frame = self.scanline_effect(modified_frame, eff_scan_intensity, eff_scan_density)
+                        else:
+                            applied_now = False
+                            
+                    else:
                         applied_now = False
 
                     if applied_now:
-                        effect_applied_this_frame = True;
-                        break # Only apply one effect per high-freq beat window for clarity
+                        effect_applied_this_frame = True
+                        break  # Apply only one effect at a time
 
-        # Optional Zoom on Low Freq (unchanged, independent of high-freq effects)
+        # Optional Zoom on Low Freq
         if effect_params.get('zoom_pulse_on_low_freq', False) and not effect_applied_this_frame:
-             for beat_time in low_beat_times:
-                 time_diff=abs(current_time-beat_time); effect_window=0.15 # Same window size for consistency
-                 if time_diff < effect_window:
-                     proximity_multiplier=(np.cos(time_diff/effect_window*np.pi/2)); 
-                     current_effect_strength=effect_params['global_effect_intensity']*proximity_multiplier
-                     if current_effect_strength <= 0.01: continue
-                     base_zoom=effect_params['zoom_factor']; 
-                     eff_zoom=1.0+(base_zoom-1.0)*current_effect_strength
-                     if abs(eff_zoom-1.0)>0.005:
-                         modified_frame=self.zoom_pulse_effect(modified_frame,eff_zoom)
-                     break # Apply zoom only once if multiple low beats are close
+            for beat_time in low_beat_times:
+                time_diff = abs(adjusted_time - beat_time)
+                if time_diff < beat_window:  # Use same 0.1s window
+                    # Simple proximity calculation as in original
+                    beat_offset = time_diff / beat_window
+                    effect_strength = effect_params['global_effect_intensity'] * (1.0 - beat_offset)
+                    
+                    if effect_strength <= 0.01:
+                        continue
+                        
+                    base_zoom = effect_params['zoom_factor']
+                    eff_zoom = 1.0 + (base_zoom - 1.0) * effect_strength
+                    
+                    if abs(eff_zoom - 1.0) > 0.005:
+                        modified_frame = self.zoom_pulse_effect(modified_frame, eff_zoom)
+                    
+                    break # Apply zoom only once if multiple low beats are close
 
         return modified_frame
 
     # --- Main Processing Functions ---
-    # Modified to support the random/sequential video order option
     def write_video_directly(self, video_folder, audio_path, width, height, fps, max_beats,
                              filename_prefix, low_beat_times, high_beat_times, effect_params):
         try:
-            output_dir=folder_paths.get_output_directory(); 
-            timestamp=datetime.datetime.now().strftime("%Y%m%d-%H%M%S"); 
-            output_filename=f"{filename_prefix}_{timestamp}.mp4"
-            temp_video_path=os.path.join(output_dir, "temp_" + output_filename); 
-            final_output_path=os.path.join(output_dir, output_filename); 
+            output_dir = folder_paths.get_output_directory()
+            timestamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+            output_filename = f"{filename_prefix}_{timestamp}.mp4"
+            temp_video_path = os.path.join(output_dir, "temp_" + output_filename)
+            final_output_path = os.path.join(output_dir, output_filename)
             os.makedirs(output_dir, exist_ok=True)
             
-            audio_duration = self.get_audio_duration(audio_path);
-            if audio_duration <= 0: raise ValueError("Audio duration is zero or negative.")
-            total_frames = int(audio_duration * fps);
-            if total_frames <= 0: raise ValueError("Calculated total frames is zero or negative.")
+            audio_duration = self.get_audio_duration(audio_path)
+            if audio_duration <= 0:
+                raise ValueError("Audio duration is zero or negative.")
+                
+            total_frames = int(audio_duration * fps)
+            if total_frames <= 0:
+                raise ValueError("Calculated total frames is zero or negative.")
+                
             print(f"Writing {total_frames} frames directly to {temp_video_path}")
             
             # Get list of video files
-            video_files=[os.path.join(video_folder, f) for f in os.listdir(video_folder) 
+            video_files = [os.path.join(video_folder, f) for f in os.listdir(video_folder) 
                          if f.lower().endswith(('.mp4','.avi','.mov','.mkv','.webm')) 
                          and os.path.isfile(os.path.join(video_folder, f))]
             
-            if not video_files: raise ValueError(f"No valid videos found in {video_folder}")
+            if not video_files:
+                raise ValueError(f"No valid videos found in {video_folder}")
             
             # Sort or randomize based on random_video_order parameter
             if effect_params.get('random_video_order', True):
@@ -506,65 +556,79 @@ class FrequencyBeatSyncNode:
                 # Sort alphabetically for sequential order
                 video_files.sort()
                 
-            video_caps=[]
+            video_caps = []
             for vf in video_files:
                 try:
-                    cap=cv2.VideoCapture(vf);
+                    cap = cv2.VideoCapture(vf)
                     if cap.isOpened():
-                        v_fps=cap.get(cv2.CAP_PROP_FPS);
-                        v_frames=int(cap.get(cv2.CAP_PROP_FRAME_COUNT));
-                        v_dur=v_frames/v_fps if v_fps>0 else 0
-                        if v_dur>0.1: 
+                        v_fps = cap.get(cv2.CAP_PROP_FPS)
+                        v_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                        v_dur = v_frames/v_fps if v_fps > 0 else 0
+                        
+                        if v_dur > 0.1: 
                             video_caps.append({
-                                'cap':cap,
-                                'path':vf,
-                                'width':int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                                'height':int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                'fps':v_fps,
-                                'frame_count':v_frames,
-                                'duration':v_dur
+                                'cap': cap,
+                                'path': vf,
+                                'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                                'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                'fps': v_fps,
+                                'frame_count': v_frames,
+                                'duration': v_dur
                             })
-                        else: cap.release()
+                        else:
+                            cap.release()
                 except Exception as e: 
                     print(f"Warn: Error opening {vf}: {e}")
                     
-            if not video_caps: raise ValueError("Could not open any valid videos.")
+            if not video_caps:
+                raise ValueError("Could not open any valid videos.")
             
-            fourcc=cv2.VideoWriter_fourcc(*'mp4v'); 
-            out=cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height));
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(temp_video_path, fourcc, fps, (width, height))
             
-            if not out.isOpened(): raise IOError(f"Failed to open video writer for {temp_video_path}")
+            if not out.isOpened():
+                raise IOError(f"Failed to open video writer for {temp_video_path}")
             
-            pbar = ProgressBar(total_frames); 
-            current_video_idx=0; 
-            last_low_beat_switch_time=-1.0; 
-            prev_raw_frame=None; 
-            prev_processed_frame=None
+            pbar = ProgressBar(total_frames)
+            current_video_idx = 0
+            last_low_beat_switch_time = -1.0
+            prev_raw_frame = None
+            prev_processed_frame = None
+
+            # Calculate sync offset for scene changes (in seconds)
+            sync_offset_sec = effect_params.get('sync_offset_ms', 0) / 1000.0
 
             for frame_idx in range(total_frames):
-                pbar.update_absolute(frame_idx + 1); 
+                pbar.update_absolute(frame_idx + 1)
                 current_time = frame_idx / fps
                 switched_video = False
                 
+                # Apply the sync offset to scene changes too
+                adjusted_time = current_time - sync_offset_sec
+                
                 for beat_time in low_beat_times:
-                    if abs(current_time-beat_time)<(1.0/fps) and (current_time-last_low_beat_switch_time)>0.4:
-                        current_video_idx=(current_video_idx+1)%len(video_caps); 
-                        last_low_beat_switch_time=current_time; 
-                        switched_video=True; 
+                    time_diff = abs(adjusted_time - beat_time)
+                    frame_time_window = 1.0 / fps  # One frame duration
+                    
+                    # Using a smaller time window for more precise scene changes
+                    if time_diff < frame_time_window and (adjusted_time - last_low_beat_switch_time) > 0.4:
+                        current_video_idx = (current_video_idx + 1) % len(video_caps)
+                        last_low_beat_switch_time = adjusted_time
+                        switched_video = True
                         break
                         
-                video=video_caps[current_video_idx]; 
-                time_in_video=current_time%video['duration'] if video['duration']>0 else 0
-                current_raw_frame=self.get_frame_at_time(video['cap'],time_in_video)
+                video = video_caps[current_video_idx]
+                time_in_video = current_time % video['duration'] if video['duration'] > 0 else 0
+                current_raw_frame = self.get_frame_at_time(video['cap'], time_in_video)
                 
-                if current_raw_frame.shape[1]!=width or current_raw_frame.shape[0]!=height: 
-                    current_raw_frame=cv2.resize(current_raw_frame,(width,height),interpolation=cv2.INTER_LINEAR)
+                if current_raw_frame.shape[1] != width or current_raw_frame.shape[0] != height: 
+                    current_raw_frame = cv2.resize(current_raw_frame, (width, height), interpolation=cv2.INTER_LINEAR)
                     
-                if frame_idx==0: 
-                    prev_raw_frame=current_raw_frame.copy(); 
-                    prev_processed_frame=current_raw_frame.copy()
+                if frame_idx == 0: 
+                    prev_raw_frame = current_raw_frame.copy()
+                    prev_processed_frame = current_raw_frame.copy()
 
-                modified_frame=self._apply_effects(
+                modified_frame = self._apply_effects(
                     current_raw_frame,
                     prev_raw_frame,
                     prev_processed_frame,
@@ -576,24 +640,24 @@ class FrequencyBeatSyncNode:
                 )
                 
                 out.write(modified_frame)
-                prev_raw_frame=current_raw_frame.copy(); 
-                prev_processed_frame=modified_frame.copy()
+                prev_raw_frame = current_raw_frame.copy()
+                prev_processed_frame = modified_frame.copy()
 
-            out.release(); 
+            out.release()
             [vc['cap'].release() for vc in video_caps]
-            # Removed pbar.finish() call which caused the error
+            # No pbar.finish() call to avoid error
             
-            print("Adding audio..."); 
+            print("Adding audio...")
             final_cmd = [
-                'ffmpeg','-y',
-                '-i',temp_video_path,
-                '-i',audio_path,
-                '-c:v','libx264',
-                '-preset','medium',
-                '-crf','23',
-                '-pix_fmt','yuv420p',
-                '-c:a','aac',
-                '-b:a','192k',
+                'ffmpeg', '-y',
+                '-i', temp_video_path,
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-preset', 'medium',
+                '-crf', '23',
+                '-pix_fmt', 'yuv420p',
+                '-c:a', 'aac',
+                '-b:a', '192k',
                 '-shortest',
                 final_output_path
             ]
@@ -607,24 +671,38 @@ class FrequencyBeatSyncNode:
                     encoding='utf-8', 
                     errors='ignore'
                 )
-                print(f"Video saved: {final_output_path}");
-                try: os.remove(temp_video_path)
-                except OSError as e: print(f"Warn: Failed to remove temp file {temp_video_path}: {e}")
+                print(f"Video saved: {final_output_path}")
+                try:
+                    os.remove(temp_video_path)
+                except OSError as e:
+                    print(f"Warn: Failed to remove temp file {temp_video_path}: {e}")
                 return final_output_path
             except subprocess.CalledProcessError as e:
                 print(f"ERROR during FFmpeg merge! Command: {' '.join(e.cmd)}\nReturn Code: {e.returncode}\nStderr: {e.stderr}\nStdout: {e.stdout}")
                 print(f"Video *without* audio saved as {temp_video_path}")
-                try: os.rename(temp_video_path, final_output_path); return final_output_path
-                except OSError as re: print(f"Error renaming temp file: {re}"); return temp_video_path
+                try:
+                    os.rename(temp_video_path, final_output_path)
+                    return final_output_path
+                except OSError as re:
+                    print(f"Error renaming temp file: {re}")
+                    return temp_video_path
         except Exception as e:
-            print(f"--- ERROR in write_video_directly ---"); import traceback; traceback.print_exc()
-            if 'out' in locals() and out.isOpened(): out.release()
-            if 'video_caps' in locals(): [vc['cap'].release() for vc in video_caps if vc.get('cap') and vc['cap'].isOpened()]
+            print(f"--- ERROR in write_video_directly ---")
+            import traceback
+            traceback.print_exc()
+            if 'out' in locals() and out.isOpened():
+                out.release()
+            if 'video_caps' in locals():
+                [vc['cap'].release() for vc in video_caps if vc.get('cap') and vc['cap'].isOpened()]
             return None
 
     def process_video(self, video_folder, audio_path, width, height, fps, max_beats, max_frames,
                      global_effect_intensity, output_mode, filename_prefix,
-                     # New parameter for video order
+                     # Sync parameters - removed effect_window_duration
+                     sync_offset_ms,
+                     # Beat detection parameters
+                     low_freq_sensitivity, high_freq_sensitivity,
+                     # Video ordering parameter
                      random_video_order,
                      # Effect enable toggles
                      enable_rgb_split, enable_echo, enable_zoom_pulse, enable_vhs, enable_glitch,
@@ -638,12 +716,18 @@ class FrequencyBeatSyncNode:
                      barrel_distortion_strength,
                      scanline_intensity, scanline_density):
 
-        pbar = ProgressBar(100); pbar.update(0)
+        pbar = ProgressBar(100)
+        pbar.update(0)
         
         # Bundle all params into dictionary for easier passing
         effect_params = { 
+            # Include sync parameters
+            "sync_offset_ms": sync_offset_ms,
+            # We don't use effect_window_duration anymore with simpler approach
+            
             # Include the video order parameter
             "random_video_order": random_video_order,
+            
             # Include enable toggles
             "enable_rgb_split": enable_rgb_split,
             "enable_echo": enable_echo,
@@ -656,6 +740,7 @@ class FrequencyBeatSyncNode:
             "enable_brightness_flash": enable_brightness_flash,
             "enable_barrel_distortion": enable_barrel_distortion,
             "enable_scanlines": enable_scanlines,
+            
             # Include effect parameters
             "global_effect_intensity": global_effect_intensity, 
             "rgb_shift_amount": rgb_shift_amount, 
@@ -676,27 +761,34 @@ class FrequencyBeatSyncNode:
         
         try:
             print(f"Starting beat-sync: {width}x{height}@{fps}fps, Mode: {output_mode}")
-            if not os.path.isdir(video_folder): raise ValueError(f"Video folder not found: {video_folder}")
-            if not os.path.isfile(audio_path): raise ValueError(f"Audio file not found: {audio_path}")
+            if not os.path.isdir(video_folder):
+                raise ValueError(f"Video folder not found: {video_folder}")
+            if not os.path.isfile(audio_path):
+                raise ValueError(f"Audio file not found: {audio_path}")
             
-            video_files=[os.path.join(video_folder, f) for f in os.listdir(video_folder) 
+            video_files = [os.path.join(video_folder, f) for f in os.listdir(video_folder) 
                        if f.lower().endswith(('.mp4','.avi','.mov','.mkv','.webm')) 
                        and os.path.isfile(os.path.join(video_folder, f))]
                        
             if not video_files: 
                 print(f"No videos found in {video_folder}. Returning black frame.")
-                dummy_f=Image.new('RGB',(width,height))
+                dummy_f = Image.new('RGB', (width, height))
                 return (self.p2t(dummy_f), self.get_audio_data(audio_path))
                 
-            print(f"Found {len(video_files)} videos."); pbar.update(5)
+            print(f"Found {len(video_files)} videos.")
+            pbar.update(5)
             
-            # Use the beat detection
-            low_beat_times, high_beat_times, sr = self.detect_frequency_beats(audio_path)
+            # Use the improved beat detection with sensitivity parameters
+            low_beat_times, high_beat_times, sr = self.detect_frequency_beats(
+                audio_path,
+                low_freq_sensitivity=low_freq_sensitivity,
+                high_freq_sensitivity=high_freq_sensitivity
+            )
             pbar.update(20)
             
-            if max_beats>0 and len(low_beat_times)>max_beats: 
+            if max_beats > 0 and len(low_beat_times) > max_beats: 
                 print(f"Limiting low freq beats from {len(low_beat_times)} to {max_beats}")
-                low_beat_times=low_beat_times[:max_beats]
+                low_beat_times = low_beat_times[:max_beats]
                 
             audio_data = self.get_audio_data(audio_path)
 
@@ -708,21 +800,24 @@ class FrequencyBeatSyncNode:
                 
                 if output_path: 
                     print(f"\n=== VIDEO SAVED ===\n{output_path}\n")
-                    dummy_f=Image.new('RGB',(width,height))
+                    dummy_f = Image.new('RGB', (width, height))
                     return (self.p2t(dummy_f), audio_data)
                 else: 
                     print("Direct video writing failed. Falling back to frame preview.")
                     output_mode = "Frames for Editing"
 
             if output_mode == "Frames for Editing":
-                audio_duration=self.get_audio_duration(audio_path, sr);
-                if audio_duration<=0: audio_duration=10.0
+                audio_duration = self.get_audio_duration(audio_path, sr)
+                if audio_duration <= 0:
+                    audio_duration = 10.0
                 
-                safe_default_frames=300; preview_max_secs=15.0
-                if max_frames>0: 
-                    total_frames=min(max_frames,int(audio_duration*fps))
+                safe_default_frames = 300
+                preview_max_secs = 15.0
+                
+                if max_frames > 0: 
+                    total_frames = min(max_frames, int(audio_duration * fps))
                 else: 
-                    total_frames=min(safe_default_frames,int(min(audio_duration,preview_max_secs)*fps))
+                    total_frames = min(safe_default_frames, int(min(audio_duration, preview_max_secs) * fps))
                     
                 print(f"Generating {total_frames} frames for preview at {fps} FPS.")
                 
@@ -733,64 +828,76 @@ class FrequencyBeatSyncNode:
                     # Sort alphabetically for sequential order
                     video_files.sort()
                     
-                video_caps=[]
+                video_caps = []
                 for vf in video_files:
                     try:
-                        cap=cv2.VideoCapture(vf);
+                        cap = cv2.VideoCapture(vf)
                         if cap.isOpened():
-                            v_fps=cap.get(cv2.CAP_PROP_FPS);
-                            v_frames=int(cap.get(cv2.CAP_PROP_FRAME_COUNT));
-                            v_dur=v_frames/v_fps if v_fps>0 else 0
-                            if v_dur>0.1: 
+                            v_fps = cap.get(cv2.CAP_PROP_FPS)
+                            v_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+                            v_dur = v_frames/v_fps if v_fps > 0 else 0
+                            
+                            if v_dur > 0.1: 
                                 video_caps.append({
-                                    'cap':cap,
-                                    'path':vf,
-                                    'width':int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
-                                    'height':int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
-                                    'fps':v_fps,
-                                    'frame_count':v_frames,
-                                    'duration':v_dur
+                                    'cap': cap,
+                                    'path': vf,
+                                    'width': int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)),
+                                    'height': int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+                                    'fps': v_fps,
+                                    'frame_count': v_frames,
+                                    'duration': v_dur
                                 })
-                            else: cap.release()
-                    except Exception as e: print(f"Warn: Error opening {vf} for preview: {e}")
+                            else:
+                                cap.release()
+                    except Exception as e:
+                        print(f"Warn: Error opening {vf} for preview: {e}")
                     
                 if not video_caps: 
                     print("Could not open valid videos for preview.")
-                    dummy_f=Image.new('RGB',(width,height))
+                    dummy_f = Image.new('RGB', (width, height))
                     return (self.p2t(dummy_f), audio_data)
                     
-                pbar.update(30); 
-                frames_pil=[]; 
-                prev_raw_frame=None; 
-                prev_processed_frame=None; 
-                current_video_idx=0; 
-                last_low_beat_switch_time=-1.0
+                pbar.update(30)
+                frames_pil = []
+                prev_raw_frame = None
+                prev_processed_frame = None
+                current_video_idx = 0
+                last_low_beat_switch_time = -1.0
+                
+                # Calculate sync offset for scene changes (in seconds)
+                sync_offset_sec = effect_params.get('sync_offset_ms', 0) / 1000.0
 
                 for frame_idx in range(total_frames):
-                    progress=int(30+60*(frame_idx+1)/total_frames); 
-                    pbar.update_absolute(progress); 
-                    current_time=frame_idx/fps
-                    switched_video=False
+                    progress = int(30 + 60 * (frame_idx + 1) / total_frames)
+                    pbar.update_absolute(progress)
+                    current_time = frame_idx / fps
+                    switched_video = False
+                    
+                    # Apply sync offset to scene changes too
+                    adjusted_time = current_time - sync_offset_sec
                     
                     for beat_time in low_beat_times:
-                        if abs(current_time-beat_time)<(1.0/fps) and (current_time-last_low_beat_switch_time)>0.4:
-                            current_video_idx=(current_video_idx+1)%len(video_caps); 
-                            last_low_beat_switch_time=current_time; 
-                            switched_video=True; 
+                        time_diff = abs(adjusted_time - beat_time)
+                        frame_time_window = 1.0 / fps  # One frame duration
+                        
+                        if time_diff < frame_time_window and (adjusted_time - last_low_beat_switch_time) > 0.4:
+                            current_video_idx = (current_video_idx + 1) % len(video_caps)
+                            last_low_beat_switch_time = adjusted_time
+                            switched_video = True
                             break
                             
-                    video=video_caps[current_video_idx]; 
-                    time_in_video=current_time%video['duration'] if video['duration']>0 else 0
-                    current_raw_frame=self.get_frame_at_time(video['cap'],time_in_video)
+                    video = video_caps[current_video_idx]
+                    time_in_video = current_time % video['duration'] if video['duration'] > 0 else 0
+                    current_raw_frame = self.get_frame_at_time(video['cap'], time_in_video)
                     
-                    if current_raw_frame.shape[1]!=width or current_raw_frame.shape[0]!=height: 
-                        current_raw_frame=cv2.resize(current_raw_frame,(width,height),interpolation=cv2.INTER_LINEAR)
+                    if current_raw_frame.shape[1] != width or current_raw_frame.shape[0] != height: 
+                        current_raw_frame = cv2.resize(current_raw_frame, (width, height), interpolation=cv2.INTER_LINEAR)
                         
-                    if frame_idx==0: 
-                        prev_raw_frame=current_raw_frame.copy(); 
-                        prev_processed_frame=current_raw_frame.copy()
+                    if frame_idx == 0: 
+                        prev_raw_frame = current_raw_frame.copy()
+                        prev_processed_frame = current_raw_frame.copy()
 
-                    modified_frame=self._apply_effects(
+                    modified_frame = self._apply_effects(
                         current_raw_frame,
                         prev_raw_frame,
                         prev_processed_frame,
@@ -801,35 +908,36 @@ class FrequencyBeatSyncNode:
                         fps
                     )
                     
-                    frame_rgb=cv2.cvtColor(modified_frame,cv2.COLOR_BGR2RGB); 
-                    pil_image=Image.fromarray(frame_rgb); 
+                    frame_rgb = cv2.cvtColor(modified_frame, cv2.COLOR_BGR2RGB)
+                    pil_image = Image.fromarray(frame_rgb)
                     frames_pil.append(pil_image)
                     
-                    prev_raw_frame=current_raw_frame.copy(); 
-                    prev_processed_frame=modified_frame.copy()
+                    prev_raw_frame = current_raw_frame.copy()
+                    prev_processed_frame = modified_frame.copy()
 
-                [vc['cap'].release() for vc in video_caps]; 
+                [vc['cap'].release() for vc in video_caps]
                 pbar.update(95)
                 
                 if frames_pil:
                     try: 
-                        frames_tensors=[self.p2t(f) for f in frames_pil]; 
-                        result_tensor=torch.cat(frames_tensors,dim=0); 
+                        frames_tensors = [self.p2t(f) for f in frames_pil]
+                        result_tensor = torch.cat(frames_tensors, dim=0)
                         print(f"Final preview tensor shape: {result_tensor.shape}")
                     except RuntimeError as e: 
                         print(f"WARN: Memory error creating preview tensor batch: {e}. Returning first frame.")
-                        result_tensor=self.p2t(frames_pil[0]) if frames_pil else self.p2t(Image.new('RGB',(width,height)))
+                        result_tensor = self.p2t(frames_pil[0]) if frames_pil else self.p2t(Image.new('RGB', (width, height)))
                 else: 
                     print("Warning: No frames generated for preview.")
-                    result_tensor=self.p2t(Image.new('RGB',(width,height)))
+                    result_tensor = self.p2t(Image.new('RGB', (width, height)))
                     
-                pbar.update(100); 
+                pbar.update(100)
                 return (result_tensor, audio_data)
 
         except Exception as e:
             print(f"\n--- ERROR in FrequencyBeatSyncNode ---")
             print(f"Error Type: {type(e).__name__}: {e}")
-            import traceback; traceback.print_exc()
+            import traceback
+            traceback.print_exc()
             print("-------------------------------------\n")
             dummy_f = Image.new('RGB', (width, height))
             audio_data = self.get_audio_data(audio_path)
@@ -838,4 +946,4 @@ class FrequencyBeatSyncNode:
 
 # Register the node
 NODE_CLASS_MAPPINGS = { "FrequencyBeatSyncNode": FrequencyBeatSyncNode }
-NODE_DISPLAY_NAME_MAPPINGS = { "FrequencyBeatSyncNode": "Frequency Beat Sync Effects+" }
+NODE_DISPLAY_NAME_MAPPINGS = { "FrequencyBeatSyncNode": "Beat Sync (Advanced)" }

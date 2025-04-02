@@ -33,6 +33,7 @@ from .cyberpunk_magnify_node import CyberpunkMagnifyNode
 from .rgb_streak_node import RGBStreakNode
 from .voxel_node import VoxelNode
 from .papercraftnode import PaperCraftNode
+from .frequency_beat_sync_advanced import FrequencyBeatSyncNode as FrequencyBeatSyncNodeAdvanced
 
 # Map the node classes for ComfyUI to recognize them
 NODE_CLASS_MAPPINGS = {
@@ -52,6 +53,7 @@ NODE_CLASS_MAPPINGS = {
     "RGBStreakNode": RGBStreakNode,
     "VoxelNode": VoxelNode,
     "PaperCraftNode": PaperCraftNode,
+    "FrequencyBeatSyncNodeAdvanced": FrequencyBeatSyncNodeAdvanced,
 }
 
 # Provide user-friendly display names for the nodes
@@ -71,7 +73,8 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "CyberpunkMagnifyNode": "Cyberpunk Magnify Effect",
     "RGBStreakNode": "RGB Streak Effect",
     "VoxelNode": "Voxel Block Effect",
-    "PaperCraftNode": "Paper Craft Effect"
+    "PaperCraftNode": "Paper Craft Effect",
+    "FrequencyBeatSyncNodeAdvanced": "Beat Sync (Advanced)",
 }
 
 
